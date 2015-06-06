@@ -26,7 +26,7 @@ object Main extends App {
     system.scheduler.schedule(schedule_initialDuration, schedule_interval, pubSocket,
       ZMQMessage(
         Seq(
-          ByteString(topic),
+          ByteString(topic), // 第一フレーム目にtopicを指定する
           ByteString(message))))
   }
 }
