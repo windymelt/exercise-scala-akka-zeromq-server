@@ -1,6 +1,5 @@
 package momijikawa.exercisezmq
 
-import akka.actor.ActorRef
 import akka.util.ByteString
 import akka.zeromq.ZMQMessage
 import scala.concurrent.ExecutionContext
@@ -44,20 +43,14 @@ object Main extends App {
       case unknown => logError("Unknown message received: " + unknown)
     }
 
-    /**
-     * 返信メッセージにセッション番号を付与し送信させる。
-     *
-     * 受信メッセージからセッション番号を取り出し、返信アドレスマップ中の対応するアクターに
-     * セッション番号を取り除いたメッセージを送信する。
-     */
-    def sendMessage(xs: Seq[ByteString], sessionNumber: Int, sender: ActorRef): Unit = {
+    /** 返信メッセージにセッション番号を付与し送信させる。 */
+    def sendMessage(xs: Seq[ByteString], sessionNumber: Int): Unit = {
       val attachedMessage: Seq[ByteString] = ByteString(sessionNumber.toString) +: xs
-      debug("SESS: sm")
-      /*sender*/repSocket ! ZMQMessage(attachedMessage)
+      repSocket ! ZMQMessage(attachedMessage)
     }
 
     /**
-     * メッセージを上層レイヤに送信する。
+     * メッセージを上層レイヤに送信し、メッセージが返って来たらReqへの返信を自動的に行う。
      *
      * 受信メッセージからセッション番号を取り出し、より上層のレイヤーに転送し、返答を待たせる。
      * 返答に自動的にセッション番号を復元してZeroMQソケットにメッセージを送信させる。
@@ -66,9 +59,7 @@ object Main extends App {
       val (sessionNumber, unwrappedMessage) = detachSequenceNumber(m.frames)
 
       (listener ? unwrappedMessage).mapTo[Seq[ByteString]].onComplete {
-        case Success(xs) =>
-          debug("SESS: fm GOT RETRN")
-          sendMessage(xs, sessionNumber, sender)
+        case Success(xs) => sendMessage(xs, sessionNumber)
         case Failure(why) => warning(why.getMessage)
       }
     }
@@ -83,7 +74,6 @@ object Main extends App {
   class MessageListener extends Actor with ActorLogging {
     def receive = {
       case xs: Seq[ByteString] =>
-        log.info("MLSTNR: " + xs.toString())
         val it = xs.map{bs => bs.mapI(_+1)}
         sender ! it
     }
