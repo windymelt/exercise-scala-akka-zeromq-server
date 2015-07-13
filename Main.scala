@@ -1,17 +1,15 @@
 package momijikawa.exercisezmq
 
-import akka.util.ByteString
-import akka.zeromq.ZMQMessage
-import scala.concurrent.ExecutionContext
-import scala.util.{Failure, Success}
-import scala.collection.immutable.Seq
-
-case class RxRaw(msg: ZMQMessage)
-
 object Main extends App {
   import akka.actor._
   import akka.zeromq._
   import akka.pattern.ask
+  import akka.util.ByteString
+  import scala.concurrent.ExecutionContext
+  import scala.util.{Failure, Success}
+  import scala.collection.immutable.Seq
+
+  case class RxRaw(msg: ZMQMessage)
 
   /** 受信したメッセージをラップし全て`upperLayer`に転送するアクター。 */
   class RepActor(upperLayer: ActorRef) extends Actor with ActorLogging {
