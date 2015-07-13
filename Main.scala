@@ -13,6 +13,7 @@ object Main extends App {
   import akka.zeromq._
   import akka.pattern.ask
 
+  /** 受信したメッセージをラップし全て`upperLayer`に転送するアクター。 */
   class RepActor(upperLayer: ActorRef) extends Actor with ActorLogging {
     import log.{ debug, warning }
 
@@ -25,6 +26,15 @@ object Main extends App {
     }
   }
 
+  /**
+   * メッセージのセッション番号を自動的に取り外し・付与し、受信したメッセージと返答を返すアクターとの仲介を行う。
+   *
+   * @param listener 受信したメッセージの転送先アクター。
+   *
+   * ZeroMQのRepソケットを作成し、受信するメッセージを自分に転送させる。メッセージにはセッション番号が含まれているため、
+   * これを取り外し、`listener`に転送する。`listener`がメッセージを返信したら、そのメッセージにセッション番号を付与して
+   * ZeroMQのRepソケットに送信させる。
+   */
   class SessionLayer(listener: ActorRef) extends Actor with ActorLogging {
     import log.{debug, warning, error => logError}
     import scala.concurrent.duration._
@@ -71,6 +81,7 @@ object Main extends App {
     }
   }
 
+  /** 実際のアプリケーション役となるアクター。メッセージのバイト列に1を足して返信する。 */
   class MessageListener extends Actor with ActorLogging {
     def receive = {
       case xs: Seq[ByteString] =>
